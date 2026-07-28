@@ -80,6 +80,7 @@ const required = [
   "package/dist/index.d.ts",
   "package/dist/cli.js",
   "package/_bundled_plugin/.codex-plugin/plugin.json",
+  "package/_bundled_plugin/.claude-plugin/plugin.json",
 ];
 
 for (const file of required) {

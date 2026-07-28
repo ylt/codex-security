@@ -7,7 +7,7 @@ The repository contains the Codex Security plugin and its TypeScript SDK/CLI.
 - `sdk/typescript/src/` contains the public SDK, CLI, runtime, scan contract, and engine implementations.
 - `sdk/typescript/src/engine/` contains the Codex/Claude engine abstraction and provider-specific logic.
 - `sdk/typescript/tests-ts/` contains Bun-based TypeScript tests (25 files — see key ones below).
-- `sdk/typescript/_bundled_plugin/` contains Python workbench scripts (~30 files), JSON schemas, 13 agent skills, 11 reference docs, and MCP server.
+- `sdk/typescript/_bundled_plugin/` contains the `.codex-plugin/` and `.claude-plugin/` manifests, Python workbench scripts (~30 files), JSON schemas, 13 agent skills, 11 reference docs, and the readable MCP server source.
 - `sdk/typescript/scripts/` contains package-checking and smoke-test utilities.
 - Root files such as `Dockerfile`, `compose.yaml`, and `SECURITY.md` cover packaging and deployment.
 
