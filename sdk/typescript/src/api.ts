@@ -45,7 +45,7 @@ import {
   workerStatusFromEvent,
   type ScanWorkerStatus,
 } from "./worker-progress.js";
-import { ANTHROPIC_SDK_VERSION, CODEX_EXECUTABLE_VERSION, CODEX_SDK_VERSION } from "./version.js";
+import { CODEX_EXECUTABLE_VERSION, CODEX_SDK_VERSION } from "./version.js";
 import { createEngine, type EngineType, type ScanEngine } from "./engine/index.js";
 import {
   bootstrapPlugin,
@@ -186,8 +186,6 @@ export interface CodexSecurityMetadata {
   sdkVersion: string;
   executable: "@openai/codex";
   executableVersion: string;
-  anthropicSdk?: "@anthropic-ai/sdk";
-  anthropicSdkVersion?: string;
 }
 
 interface ClientDependencies {
@@ -218,8 +216,6 @@ export class CodexSecurity {
     sdkVersion: CODEX_SDK_VERSION,
     executable: "@openai/codex",
     executableVersion: CODEX_EXECUTABLE_VERSION,
-    anthropicSdk: "@anthropic-ai/sdk",
-    anthropicSdkVersion: ANTHROPIC_SDK_VERSION,
   };
 
   readonly #dependencies: ClientDependencies;
@@ -243,7 +239,7 @@ export class CodexSecurity {
     if (selectedEngine !== "codex" && selectedEngine !== "claude") {
       throw new CodexSecurityError(`Unknown scan engine: ${selectedEngine}. Use codex or claude.`);
     }
-    this.#engine = createEngine(selectedEngine, { type: selectedEngine, model: this.config.model, reasoningEffort: this.config.reasoningEffort, pythonPath: this.config.pythonPath }, dependencies.environment);
+    this.#engine = createEngine(selectedEngine, { type: selectedEngine, model: this.config.model, reasoningEffort: this.config.reasoningEffort, pythonPath: this.config.pythonPath, createCodex: dependencies.createCodex }, dependencies.environment);
   }
 
   public async run(

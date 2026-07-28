@@ -20,17 +20,28 @@ export class CodexEngine implements ScanEngine {
   ) {}
 
   async createScanSession(options: { env: Record<string, string>; workingDirectory: string }): Promise<EngineThread> {
-    const client = new Codex({
+    const client = (this.config.createCodex as ((options: CodexOptions) => {
+      startThread(options: {
+        workingDirectory: string;
+        skipGitRepoCheck: boolean;
+        approvalPolicy: "never";
+        model?: string;
+      }): unknown;
+    }) | undefined ?? ((options: CodexOptions) => new Codex(options)))({
       env: options.env,
-      config: { default_permissions: "codex_security_scan", allow_login_shell: false },
-    } satisfies CodexOptions);
+      config: {
+        default_permissions: "codex_security_scan",
+        allow_login_shell: false,
+        permissions: { codex_security_scan: { filesystem: { ":root": "read", ":workspace_roots": "write" } } },
+      },
+    });
     const thread = client.startThread({
       workingDirectory: options.workingDirectory,
       skipGitRepoCheck: true,
       approvalPolicy: "never",
       ...(this.config.model === undefined ? {} : { model: this.config.model }),
     });
-    return thread as unknown as EngineThread;
+    return thread as EngineThread;
   }
 
   async checkAuth(env: Record<string, string | undefined>): Promise<EngineAuth> {

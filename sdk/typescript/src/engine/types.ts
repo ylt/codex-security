@@ -5,6 +5,7 @@ export interface EngineConfig {
   model?: string;
   reasoningEffort?: string;
   pythonPath?: string;
+  createCodex?: (options: import("@openai/codex-sdk").CodexOptions) => unknown;
 }
 
 export interface EngineAuth {
