@@ -715,6 +715,7 @@ export async function main(
 
           const matching = await dependencies.matchFindings(
             matchingInputs as JsonObject & ScanComparisonInput,
+            comparisonEngineOptions(dependencies.environment),
           );
           return presentHistory(
             await history([
@@ -1691,7 +1692,10 @@ async function matchAllScans(
         ? { matches: [], uncertain: [] }
         : await dependencies.matchFindings(
             { before, after: afterFindings },
-            { allowHistoricalUncertainty: true },
+            {
+              allowHistoricalUncertainty: true,
+              ...comparisonEngineOptions(dependencies.environment),
+            },
           );
     const comparisons = beforeScans.map(({ scanId, findings }) => {
       const beforeIds = new Set(
@@ -2738,6 +2742,17 @@ function interruptedExit(
 
 function isJsonObject(value: JsonValue): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function comparisonEngineOptions(environment: NodeJS.ProcessEnv): {
+  engine?: "codex" | "claude";
+  environment: NodeJS.ProcessEnv;
+} {
+  const selected = environment["CODEX_SECURITY_ENGINE"];
+  return {
+    ...(selected === "claude" || selected === "codex" ? { engine: selected } : {}),
+    environment,
+  };
 }
 
 function invokedAsMain(): boolean {
