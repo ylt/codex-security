@@ -2,11 +2,6 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
-import {
-  readClaudeApiKey,
-  removeClaudeApiKey,
-  saveClaudeApiKey,
-} from "./claude-auth.js";
 import type {
   EngineAuth,
   EngineConfig,
@@ -45,14 +40,14 @@ type ClaudeStreamEvent = {
 
 type ToolCall = { id: string; name: string; input: Record<string, unknown> };
 
-async function createClient(apiKey?: string): Promise<AnthropicClient> {
+async function createClient(): Promise<AnthropicClient> {
   const load = new Function(
     "return import('@anthropic-ai/sdk')",
   ) as () => Promise<{
-    default: new (options?: { apiKey?: string }) => AnthropicClient;
+    default: new (options?: Record<string, unknown>) => AnthropicClient;
   }>;
   const module = await load();
-  return new module.default(apiKey === undefined ? {} : { apiKey });
+  return new module.default();
 }
 
 export class ClaudeEngine implements ScanEngine {
@@ -65,41 +60,38 @@ export class ClaudeEngine implements ScanEngine {
 
   public constructor(
     private readonly config: EngineConfig,
-    private readonly environment: Record<string, string | undefined>,
+    _environment: Record<string, string | undefined>,
   ) {}
 
   async checkAuth(
     env: Record<string, string | undefined>,
   ): Promise<EngineAuth> {
-    const key = await readClaudeApiKey(env);
+    const hasKey = Boolean(env["ANTHROPIC_API_KEY"]?.trim());
     return {
-      method:
-        key === null
-          ? "stored_credentials"
-          : env["ANTHROPIC_API_KEY"]
-            ? "api_key"
-            : "stored_credentials",
+      method: hasKey ? "api_key" : "stored_credentials",
       verified: false,
       engine: "claude",
     };
   }
 
-  async login(options: { apiKey?: string }): Promise<{ success: boolean }> {
-    if (options.apiKey === undefined) return { success: true };
-    await saveClaudeApiKey(options.apiKey);
+  async login(_options: {
+    apiKey?: string;
+    env: Record<string, string | undefined>;
+    signal?: AbortSignal;
+  }): Promise<{ success: boolean }> {
+    // Anthropic SDK resolves credentials automatically from the environment.
     return { success: true };
   }
 
   async logout(): Promise<void> {
-    await removeClaudeApiKey();
+    // Anthropic SDK manages its own credential state.
   }
 
   async createScanSession(options: {
     env: Record<string, string>;
     workingDirectory: string;
   }): Promise<EngineThread> {
-    const key = await readClaudeApiKey({ ...this.environment, ...options.env });
-    const anthropic = await createClient(key ?? undefined);
+    const anthropic = await createClient();
     const threadId = randomUUID();
     const model = this.config.model ?? "claude-sonnet-4-20250514";
     return {

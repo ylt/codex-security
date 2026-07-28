@@ -130,9 +130,13 @@ describe("CLI", () => {
     );
     expect(manifest.text()).toContain("codex-security bulk-scan [input]");
     expect(manifest.text()).toContain("codex-security export <scanDir>");
-    expect(manifest.text()).toContain("codex-security validate <findings...>");
+    expect(manifest.text()).toContain(
+      "codex-security validate <findings...>",
+    );
     expect(manifest.text()).toContain("codex-security patch <issues...>");
-    expect(manifest.text()).toContain("codex-security scans list [repository]");
+    expect(manifest.text()).toContain(
+      "codex-security scans list [repository]",
+    );
     expect(manifest.text()).toContain("codex-security scans show <scanId>");
     expect(manifest.text()).toContain("codex-security scans rerun <scanId>");
     expect(manifest.text()).toContain(
@@ -319,7 +323,9 @@ describe("CLI", () => {
   });
 
   test("runs a bulk scan and keeps structured output on stdout", async () => {
-    const root = await mkdtemp(join(tmpdir(), "codex-security-cli-multiscan-"));
+    const root = await mkdtemp(
+      join(tmpdir(), "codex-security-cli-multiscan-"),
+    );
     try {
       await multiscanInventory(root);
       const stdout = capture();
@@ -372,7 +378,9 @@ describe("CLI", () => {
   });
 
   test("preserves the bulk-scan failure summary and redacts progress errors", async () => {
-    const root = await mkdtemp(join(tmpdir(), "codex-security-cli-multiscan-"));
+    const root = await mkdtemp(
+      join(tmpdir(), "codex-security-cli-multiscan-"),
+    );
     try {
       await multiscanInventory(root);
       const stdout = capture();
@@ -862,14 +870,14 @@ describe("CLI", () => {
       );
       expect(child.status).toBe(0);
       expect(child.stdout).toContain(
-        "command: npx --yes @codex-security/codex-security --mcp",
+        "command: npx --yes @openai/codex-security --mcp",
       );
       const config = JSON.parse(
         await readFile(join(home, ".config", "amp", "settings.json"), "utf8"),
       );
       expect(config["amp.mcpServers"]["codex-security"]).toEqual({
         command: "npx",
-        args: ["--yes", "@codex-security/codex-security", "--mcp"],
+        args: ["--yes", "@openai/codex-security", "--mcp"],
       });
     } finally {
       await rm(home, { recursive: true, force: true });
@@ -1003,10 +1011,17 @@ describe("CLI", () => {
   });
 
   test("runs split TypeScript output from an npm-style bin when Node preserves main symlinks", async () => {
-    const root = await mkdtemp(join(tmpdir(), "codex-security-cli-node-bin-"));
+    const root = await mkdtemp(
+      join(tmpdir(), "codex-security-cli-node-bin-"),
+    );
     try {
       const source = join(import.meta.dir, "..");
-      const installed = join(root, "node_modules", "@openai", "codex-security");
+      const installed = join(
+        root,
+        "node_modules",
+        "@openai",
+        "codex-security",
+      );
       const dist = join(installed, "dist");
       const build = spawnSync(
         "node",
@@ -1382,7 +1397,9 @@ describe("CLI", () => {
         dependencies(),
       ),
     ).toBe(0);
-    expect(stdout.text()).toContain("Usage: codex-security scan [repository]");
+    expect(stdout.text()).toContain(
+      "Usage: codex-security scan [repository]",
+    );
     expect(stderr.text()).toBe("");
   });
 

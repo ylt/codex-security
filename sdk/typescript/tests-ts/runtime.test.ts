@@ -88,7 +88,12 @@ async function plugin(root: string, version = "1.2.3"): Promise<string> {
 describe("plugin runtime preparation", () => {
   test("keeps installed-package plugin lookup inside the package", async () => {
     const root = await temporaryDirectory();
-    const packageRoot = join(root, "node_modules", "@openai", "codex-security");
+    const packageRoot = join(
+      root,
+      "node_modules",
+      "@openai",
+      "codex-security",
+    );
     const candidates = bundledPluginCandidates(join(packageRoot, "dist"));
     expect(candidates).toEqual([
       join(packageRoot, "dist", "_bundled_plugin"),

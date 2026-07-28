@@ -137,7 +137,7 @@ const distFiles = new Set(
   [
     "api",
     "auth",
-    "engine/claude-auth",
+    "engine/acp-engine",
     "engine/claude-engine",
     "engine/codex-engine",
     "engine/index",

@@ -23,7 +23,9 @@ describe("CLI launcher", () => {
     try {
       const launcher = join(packageRoot, "src", "cli.ts");
       const bin =
-        process.platform === "win32" ? launcher : join(root, "codex-security");
+        process.platform === "win32"
+          ? launcher
+          : join(root, "codex-security");
       if (process.platform !== "win32") {
         await symlink(launcher, bin);
       }
@@ -72,7 +74,10 @@ describe("CLI launcher", () => {
       const launcher = join(root, "bin", "codex-security.mjs");
       await mkdir(join(root, "bin"), { recursive: true });
       await mkdir(join(root, "dist"), { recursive: true });
-      await copyFile(join(packageRoot, "bin", "codex-security.mjs"), launcher);
+      await copyFile(
+        join(packageRoot, "bin", "codex-security.mjs"),
+        launcher,
+      );
       await writeFile(
         join(root, "dist", "cli.js"),
         `throw new Error(${JSON.stringify(`failed ${SYNTHETIC_CREDENTIALS}`)});\n`,
@@ -94,9 +99,16 @@ describe("CLI launcher", () => {
   });
 
   test("builds and runs emitted split TypeScript output from a clean installed npm-style bin when Node preserves main symlinks", async () => {
-    const root = await mkdtemp(join(tmpdir(), "codex-security-cli-node-bin-"));
+    const root = await mkdtemp(
+      join(tmpdir(), "codex-security-cli-node-bin-"),
+    );
     try {
-      const installed = join(root, "node_modules", "@openai", "codex-security");
+      const installed = join(
+        root,
+        "node_modules",
+        "@openai",
+        "codex-security",
+      );
       const dist = join(installed, "dist");
       const build = spawnSync(
         "node",
@@ -118,7 +130,10 @@ describe("CLI launcher", () => {
 
       const launcher = join(installed, "bin", "codex-security.mjs");
       await mkdir(join(installed, "bin"), { recursive: true });
-      await copyFile(join(packageRoot, "bin", "codex-security.mjs"), launcher);
+      await copyFile(
+        join(packageRoot, "bin", "codex-security.mjs"),
+        launcher,
+      );
       await copyFile(
         join(packageRoot, "package.json"),
         join(installed, "package.json"),

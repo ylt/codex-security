@@ -91,10 +91,9 @@ describe("ACP engine", () => {
   });
 
   test("requires an ACP command", async () => {
-    const engine = new AcpEngine({ type: "acp" }, {});
-    await expect(
-      engine.createScanSession({ env: {}, workingDirectory: "/tmp" }),
-    ).rejects.toThrow("--engine-command");
+    expect(() => new AcpEngine({ type: "acp" }, {})).toThrow(
+      "--engine-command",
+    );
   });
 
   test("cancels and kills an in-flight prompt", async () => {

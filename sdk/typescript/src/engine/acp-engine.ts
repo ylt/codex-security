@@ -28,7 +28,16 @@ export class AcpEngine implements ScanEngine {
   public constructor(
     private readonly config: EngineConfig,
     private readonly environment: Record<string, string | undefined>,
-  ) {}
+  ) {
+    const commandText =
+      config.engineCommand ?? environment["CODEX_SECURITY_ENGINE_COMMAND"];
+    if (commandText === undefined || commandText.trim().length === 0) {
+      throw new CodexSecurityError(
+        "ACP engine requires --engine-command or CODEX_SECURITY_ENGINE_COMMAND.",
+      );
+    }
+    parseEngineCommand(commandText);
+  }
 
   async checkAuth(
     _env: Record<string, string | undefined>,
@@ -43,12 +52,7 @@ export class AcpEngine implements ScanEngine {
   }): Promise<EngineThread> {
     const commandText =
       this.config.engineCommand ??
-      this.environment["CODEX_SECURITY_ENGINE_COMMAND"];
-    if (commandText === undefined || commandText.trim().length === 0) {
-      throw new CodexSecurityError(
-        "ACP engine requires --engine-command or CODEX_SECURITY_ENGINE_COMMAND.",
-      );
-    }
+      this.environment["CODEX_SECURITY_ENGINE_COMMAND"]!;
     const command = parseEngineCommand(commandText);
     const transport = new JsonRpcTransport(command, {
       cwd: options.repositoryDirectory ?? options.workingDirectory,
@@ -390,7 +394,7 @@ function mapAcpUpdate(
   return { type: "worker.event", thread_id: sessionId, event: update };
 }
 
-function parseEngineCommand(value: string): Command {
+export function parseEngineCommand(value: string): Command {
   const parts: string[] = [];
   let current = "";
   let quote: "'" | '"' | null = null;

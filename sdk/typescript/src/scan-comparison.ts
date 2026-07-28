@@ -137,8 +137,7 @@ export async function matchClaudeFindings(
     };
   }>;
   const module = await load();
-  const apiKey = options.environment?.["ANTHROPIC_API_KEY"]?.trim();
-  const anthropic = new module.default(apiKey === undefined ? {} : { apiKey });
+  const anthropic = new module.default();
   const response = await anthropic.messages.create({
     model: options.model ?? "claude-sonnet-4-20250514",
     max_tokens: 8_192,
