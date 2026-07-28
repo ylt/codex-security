@@ -212,7 +212,7 @@ const packageJson = JSON.parse(
   tar(["-xOf", archive, "package/package.json"]).toString("utf8"),
 );
 if (
-  packageJson.name !== "@codex-security/codex-security" ||
+  packageJson.name !== "@openai/codex-security" ||
   packageJson.license !== "Apache-2.0"
 ) {
   throw new Error("npm package does not contain the expected public metadata.");
