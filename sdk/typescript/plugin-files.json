@@ -4,6 +4,7 @@
     "OWNERS"
   ],
   "shippedExact": [
+    ".claude-plugin/plugin.json",
     ".app.json",
     ".mcp.json",
     "assets/logo.png",

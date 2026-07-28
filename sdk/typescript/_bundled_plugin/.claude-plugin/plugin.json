@@ -1,0 +1,21 @@
+{
+  "name": "codex-security",
+  "version": "0.1.0",
+  "description": "Security scanning workflows for code repositories — supports Codex and Claude engines.",
+  "author": { "name": "codex-security contributors" },
+  "license": "Apache-2.0",
+  "keywords": ["security", "code-review", "appsec", "threat-modeling"],
+  "skills": "../skills/",
+  "mcpServers": "../.mcp.json",
+  "interface": {
+    "displayName": "Codex Security",
+    "shortDescription": "Security scanning for your codebase",
+    "longDescription": "Codex Security runs AI-powered security scans on code repositories. Supports Codex and Claude engines.",
+    "category": "Security",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "Run a security scan on this repository.",
+      "Run a diff scan on this PR or branch."
+    ]
+  }
+}

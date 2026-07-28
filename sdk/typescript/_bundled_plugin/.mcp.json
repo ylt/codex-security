@@ -5,6 +5,7 @@
       "args": ["./mcp/server.mjs", "--stdio"],
       "cwd": ".",
       "env_vars": [
+        "ANTHROPIC_API_KEY",
         "CODEX_HOME",
         "CODEX_SQLITE_HOME",
         "CODEX_API_KEY",
