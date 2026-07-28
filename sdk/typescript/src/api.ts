@@ -46,7 +46,11 @@ import {
   type ScanWorkerStatus,
 } from "./worker-progress.js";
 import { CODEX_EXECUTABLE_VERSION, CODEX_SDK_VERSION } from "./version.js";
-import { createEngine, type EngineType, type ScanEngine } from "./engine/index.js";
+import {
+  createEngine,
+  type EngineType,
+  type ScanEngine,
+} from "./engine/index.js";
 import {
   bootstrapPlugin,
   cleanupSdkDirectory,
@@ -235,11 +239,26 @@ export class CodexSecurity {
   ) {
     this.config = structuredClone(config);
     this.#dependencies = dependencies;
-    const selectedEngine = this.config.engine ?? dependencies.environment["CODEX_SECURITY_ENGINE"] ?? "codex";
+    const selectedEngine =
+      this.config.engine ??
+      dependencies.environment["CODEX_SECURITY_ENGINE"] ??
+      "codex";
     if (selectedEngine !== "codex" && selectedEngine !== "claude") {
-      throw new CodexSecurityError(`Unknown scan engine: ${selectedEngine}. Use codex or claude.`);
+      throw new CodexSecurityError(
+        `Unknown scan engine: ${selectedEngine}. Use codex or claude.`,
+      );
     }
-    this.#engine = createEngine(selectedEngine, { type: selectedEngine, model: this.config.model, reasoningEffort: this.config.reasoningEffort, pythonPath: this.config.pythonPath, createCodex: dependencies.createCodex }, dependencies.environment);
+    this.#engine = createEngine(
+      selectedEngine,
+      {
+        type: selectedEngine,
+        model: this.config.model,
+        reasoningEffort: this.config.reasoningEffort,
+        pythonPath: this.config.pythonPath,
+        createCodex: dependencies.createCodex,
+      },
+      dependencies.environment,
+    );
   }
 
   public async run(
@@ -382,8 +401,13 @@ export class CodexSecurity {
         }
         runtime.credentialsAvailable = true;
       }
-      const authentication = await this.#engine.checkAuth(this.#dependencies.environment);
-      if (this.#engine.engineType === "codex" && !runtime.credentialsAvailable) {
+      const authentication = await this.#engine.checkAuth(
+        this.#dependencies.environment,
+      );
+      if (
+        this.#engine.engineType === "codex" &&
+        !runtime.credentialsAvailable
+      ) {
         throw new AuthenticationRequiredError(
           "No credentials were found. Run 'codex-security login', use " +
             "'codex-security login --device-auth' on a remote or headless machine, or set " +
@@ -394,7 +418,10 @@ export class CodexSecurity {
         "onAuthentication",
         options.onAuthentication,
         options.onObserverError,
-        authenticationToScanAuthentication(authentication, this.#dependencies.environment),
+        authenticationToScanAuthentication(
+          authentication,
+          this.#dependencies.environment,
+        ),
       );
       const python = await (
         this.#dependencies.resolvePluginPython ?? resolvePluginPython
@@ -875,7 +902,10 @@ export class CodexSecurity {
     return (this.#dependencies.resolveCodexCommand ?? resolveCodexCommand)();
   }
 
-  #modelConfiguration(configuration: JsonObject): { model: string; reasoningEffort: string } {
+  #modelConfiguration(configuration: JsonObject): {
+    model: string;
+    reasoningEffort: string;
+  } {
     if (this.#engine.engineType === "claude") {
       return {
         model: this.config.model ?? "claude-sonnet-4-20250514",
@@ -1351,11 +1381,19 @@ export function scanAuthentication(
 }
 
 function authenticationToScanAuthentication(
-  authentication: { method: "api_key" | "stored_credentials"; verified: boolean; engine: "codex" | "claude" },
+  authentication: {
+    method: "api_key" | "stored_credentials";
+    verified: boolean;
+    engine: "codex" | "claude";
+  },
   environment: ProcessEnvironment,
 ): ScanAuthentication {
   if (authentication.engine === "codex") return scanAuthentication(environment);
-  return { method: authentication.method, source: "ANTHROPIC_API_KEY", verified: authentication.verified } as ScanAuthentication;
+  return {
+    method: authentication.method,
+    source: "ANTHROPIC_API_KEY",
+    verified: authentication.verified,
+  } as ScanAuthentication;
 }
 
 function notifyObserver<Arguments extends unknown[]>(

@@ -2,8 +2,18 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
-import { readClaudeApiKey, removeClaudeApiKey, saveClaudeApiKey } from "./claude-auth.js";
-import type { EngineAuth, EngineConfig, EngineEvent, EngineThread, ScanEngine } from "./types.js";
+import {
+  readClaudeApiKey,
+  removeClaudeApiKey,
+  saveClaudeApiKey,
+} from "./claude-auth.js";
+import type {
+  EngineAuth,
+  EngineConfig,
+  EngineEvent,
+  EngineThread,
+  ScanEngine,
+} from "./types.js";
 import { ANTHROPIC_SDK_VERSION } from "../version.js";
 
 const execFileAsync = promisify(execFile);
@@ -13,7 +23,9 @@ const MAX_RETRIES = 3;
 
 type AnthropicClient = {
   messages: {
-    create(input: Record<string, unknown>): Promise<AsyncIterable<ClaudeStreamEvent>>;
+    create(
+      input: Record<string, unknown>,
+    ): Promise<AsyncIterable<ClaudeStreamEvent>>;
   };
 };
 
@@ -34,7 +46,9 @@ type ClaudeStreamEvent = {
 type ToolCall = { id: string; name: string; input: Record<string, unknown> };
 
 async function createClient(apiKey?: string): Promise<AnthropicClient> {
-  const load = new Function("return import('@anthropic-ai/sdk')") as () => Promise<{
+  const load = new Function(
+    "return import('@anthropic-ai/sdk')",
+  ) as () => Promise<{
     default: new (options?: { apiKey?: string }) => AnthropicClient;
   }>;
   const module = await load();
@@ -44,17 +58,27 @@ async function createClient(apiKey?: string): Promise<AnthropicClient> {
 export class ClaudeEngine implements ScanEngine {
   readonly engineType = "claude" as const;
   readonly codexCommand = null;
-  readonly metadata = { sdk: "@anthropic-ai/sdk", sdkVersion: ANTHROPIC_SDK_VERSION };
+  readonly metadata = {
+    sdk: "@anthropic-ai/sdk",
+    sdkVersion: ANTHROPIC_SDK_VERSION,
+  };
 
   public constructor(
     private readonly config: EngineConfig,
     private readonly environment: Record<string, string | undefined>,
   ) {}
 
-  async checkAuth(env: Record<string, string | undefined>): Promise<EngineAuth> {
+  async checkAuth(
+    env: Record<string, string | undefined>,
+  ): Promise<EngineAuth> {
     const key = await readClaudeApiKey(env);
     return {
-      method: key === null ? "stored_credentials" : env["ANTHROPIC_API_KEY"] ? "api_key" : "stored_credentials",
+      method:
+        key === null
+          ? "stored_credentials"
+          : env["ANTHROPIC_API_KEY"]
+            ? "api_key"
+            : "stored_credentials",
       verified: false,
       engine: "claude",
     };
@@ -150,7 +174,9 @@ async function* claudeEvents(options: {
   }
   yield {
     type: "turn.failed",
-    error: { message: `Claude scan exceeded the ${MAX_TOOL_ROUNDS}-turn tool limit.` },
+    error: {
+      message: `Claude scan exceeded the ${MAX_TOOL_ROUNDS}-turn tool limit.`,
+    },
   };
 }
 
@@ -161,7 +187,8 @@ async function createWithRetry(
   const tools = [
     {
       name: "run_workbench",
-      description: "Run one bundled Codex Security workbench command. Use this for scan registration, progress, artifact validation, and finalization.",
+      description:
+        "Run one bundled Codex Security workbench command. Use this for scan registration, progress, artifact validation, and finalization.",
       input_schema: {
         type: "object",
         properties: { args: { type: "array", items: { type: "string" } } },
@@ -170,7 +197,8 @@ async function createWithRetry(
     },
     {
       name: "run_command",
-      description: "Run a non-interactive repository command in the scan directory. Use this for inspection and invoking bundled scan scripts.",
+      description:
+        "Run a non-interactive repository command in the scan directory. Use this for inspection and invoking bundled scan scripts.",
       input_schema: {
         type: "object",
         properties: {
@@ -188,7 +216,8 @@ async function createWithRetry(
       return await options.anthropic.messages.create({
         model: options.model,
         max_tokens: 16_384,
-        system: "You are running Codex Security in a non-interactive scan. Follow the supplied scan instructions exactly. Use run_command for repository and bundled scan scripts, and run_workbench for workbench database operations. Never stop before writing the required scan artifacts and completing the requested scan.",
+        system:
+          "You are running Codex Security in a non-interactive scan. Follow the supplied scan instructions exactly. Use run_command for repository and bundled scan scripts, and run_workbench for workbench database operations. Never stop before writing the required scan artifacts and completing the requested scan.",
         messages,
         tools,
         stream: true,
@@ -212,37 +241,66 @@ async function consumeResponse(
   usage: Record<string, number> | null;
 }> {
   const content: Array<Record<string, unknown>> = [];
-  const toolInputs = new Map<number, { block: Record<string, unknown>; json: string }>();
+  const toolInputs = new Map<
+    number,
+    { block: Record<string, unknown>; json: string }
+  >();
   let text = "";
   let usage: Record<string, number> | null = null;
   for await (const event of response) {
     throwIfAborted(signal);
-    if (event.type === "message_start" && event.message?.usage?.input_tokens !== undefined) {
+    if (
+      event.type === "message_start" &&
+      event.message?.usage?.input_tokens !== undefined
+    ) {
       usage = { input_tokens: event.message.usage.input_tokens };
     }
-    if (event.type === "content_block_start" && event.index !== undefined && event.content_block !== undefined) {
+    if (
+      event.type === "content_block_start" &&
+      event.index !== undefined &&
+      event.content_block !== undefined
+    ) {
       const block = event.content_block;
-      if (block.type === "text") content[event.index] = { type: "text", text: "" };
+      if (block.type === "text")
+        content[event.index] = { type: "text", text: "" };
       if (block.type === "tool_use") {
-        const toolBlock = { type: "tool_use", id: block.id ?? randomUUID(), name: block.name ?? "" };
+        const toolBlock = {
+          type: "tool_use",
+          id: block.id ?? randomUUID(),
+          name: block.name ?? "",
+        };
         content[event.index] = toolBlock;
         toolInputs.set(event.index, { block: toolBlock, json: "" });
       }
     }
-    if (event.type === "content_block_delta" && event.index !== undefined && event.delta !== undefined) {
+    if (
+      event.type === "content_block_delta" &&
+      event.index !== undefined &&
+      event.delta !== undefined
+    ) {
       const delta = event.delta;
       if (delta.type === "text_delta" && delta.text !== undefined) {
         text += delta.text;
         const block = content[event.index];
-        if (block !== undefined && typeof block["text"] === "string") block["text"] += delta.text;
+        if (block !== undefined && typeof block["text"] === "string")
+          block["text"] += delta.text;
       }
-      if (delta.type === "input_json_delta" && delta.partial_json !== undefined) {
+      if (
+        delta.type === "input_json_delta" &&
+        delta.partial_json !== undefined
+      ) {
         const tool = toolInputs.get(event.index);
         if (tool !== undefined) tool.json += delta.partial_json;
       }
     }
-    if (event.type === "message_delta" && event.delta?.usage?.output_tokens !== undefined) {
-      usage = { ...(usage ?? {}), output_tokens: event.delta.usage.output_tokens };
+    if (
+      event.type === "message_delta" &&
+      event.delta?.usage?.output_tokens !== undefined
+    ) {
+      usage = {
+        ...(usage ?? {}),
+        output_tokens: event.delta.usage.output_tokens,
+      };
     }
   }
   const toolCalls: ToolCall[] = [];
@@ -271,13 +329,24 @@ async function executeTool(
     if (call.name === "run_workbench") {
       const args = stringArray(call.input["args"]);
       const python = requiredEnvironment(options.environment, "PYTHON");
-      const pluginRoot = requiredEnvironment(options.environment, "CODEX_SECURITY_PLUGIN_ROOT");
+      const pluginRoot = requiredEnvironment(
+        options.environment,
+        "CODEX_SECURITY_PLUGIN_ROOT",
+      );
       const result = await execFileAsync(
         python,
         ["-I", "-B", join(pluginRoot, "scripts", "workbench_db.py"), ...args],
-        { cwd: options.workingDirectory, env: sanitizedEnvironment(options.environment), maxBuffer: MAX_TOOL_OUTPUT },
+        {
+          cwd: options.workingDirectory,
+          env: sanitizedEnvironment(options.environment),
+          maxBuffer: MAX_TOOL_OUTPUT,
+        },
       );
-      return { text: result.stdout, command: [python, ...args].join(" "), isError: false };
+      return {
+        text: result.stdout,
+        command: [python, ...args].join(" "),
+        isError: false,
+      };
     }
     if (call.name === "run_command") {
       const command = requiredString(call.input["command"], "command");
@@ -287,51 +356,84 @@ async function executeTool(
         env: sanitizedEnvironment(options.environment),
         maxBuffer: MAX_TOOL_OUTPUT,
       });
-      return { text: result.stdout, command: [command, ...args].join(" "), isError: false };
+      return {
+        text: result.stdout,
+        command: [command, ...args].join(" "),
+        isError: false,
+      };
     }
-    return { text: `Unknown Claude tool: ${call.name}`, command: call.name, isError: true };
+    return {
+      text: `Unknown Claude tool: ${call.name}`,
+      command: call.name,
+      isError: true,
+    };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    return { text: detail.slice(0, MAX_TOOL_OUTPUT), command: call.name, isError: true };
+    return {
+      text: detail.slice(0, MAX_TOOL_OUTPUT),
+      command: call.name,
+      isError: true,
+    };
   }
 }
 
-function sanitizedEnvironment(environment: Record<string, string>): Record<string, string> {
-  return Object.fromEntries(Object.entries(environment).filter(([name]) => !/(?:KEY|TOKEN|SECRET|PASSWORD)/iu.test(name)));
+function sanitizedEnvironment(
+  environment: Record<string, string>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(environment).filter(
+      ([name]) => !/(?:KEY|TOKEN|SECRET|PASSWORD)/iu.test(name),
+    ),
+  );
 }
 
-function requiredEnvironment(environment: Record<string, string>, name: string): string {
+function requiredEnvironment(
+  environment: Record<string, string>,
+  name: string,
+): string {
   const value = environment[name];
-  if (value === undefined || value.length === 0) throw new Error(`Claude scan environment is missing ${name}.`);
+  if (value === undefined || value.length === 0)
+    throw new Error(`Claude scan environment is missing ${name}.`);
   return value;
 }
 
 function requiredString(value: unknown, name: string): string {
-  if (typeof value !== "string" || value.length === 0) throw new Error(`Claude tool input requires ${name}.`);
+  if (typeof value !== "string" || value.length === 0)
+    throw new Error(`Claude tool input requires ${name}.`);
   return value;
 }
 
 function stringArray(value: unknown): string[] {
-  if (!Array.isArray(value) || !value.every((item) => typeof item === "string")) throw new Error("Claude tool input requires an args string array.");
+  if (!Array.isArray(value) || !value.every((item) => typeof item === "string"))
+    throw new Error("Claude tool input requires an args string array.");
   return value;
 }
 
 function isRetryable(error: unknown): boolean {
-  return error instanceof Error && (/(?:429|500|502|503|504)/u.test(error.message) || /rate.?limit|overloaded|temporar/iu.test(error.message));
+  return (
+    error instanceof Error &&
+    (/(?:429|500|502|503|504)/u.test(error.message) ||
+      /rate.?limit|overloaded|temporar/iu.test(error.message))
+  );
 }
 
 async function delay(milliseconds: number, signal: AbortSignal): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const timer = setTimeout(resolve, milliseconds);
-    signal.addEventListener("abort", () => {
-      clearTimeout(timer);
-      reject(signal.reason ?? new Error("The Claude scan was aborted."));
-    }, { once: true });
+    signal.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(signal.reason ?? new Error("The Claude scan was aborted."));
+      },
+      { once: true },
+    );
   });
 }
 
 function throwIfAborted(signal: AbortSignal): void {
-  if (signal.aborted) throw signal.reason ?? new Error("The Claude scan was aborted.");
+  if (signal.aborted)
+    throw signal.reason ?? new Error("The Claude scan was aborted.");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

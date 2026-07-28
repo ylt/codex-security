@@ -809,7 +809,9 @@ export async function main(
           engine: z
             .enum(["codex", "claude"])
             .optional()
-            .describe("Model engine (default: CODEX_SECURITY_ENGINE or codex)."),
+            .describe(
+              "Model engine (default: CODEX_SECURITY_ENGINE or codex).",
+            ),
           model: optionValue("--model")
             .optional()
             .describe("Model to use for the scan."),
@@ -1252,7 +1254,9 @@ export async function main(
         engine: z
           .enum(["codex", "claude"])
           .optional()
-          .describe("Credential engine (default: CODEX_SECURITY_ENGINE or codex)."),
+          .describe(
+            "Credential engine (default: CODEX_SECURITY_ENGINE or codex).",
+          ),
         deviceAuth: z
           .boolean()
           .default(false)
@@ -1268,7 +1272,9 @@ export async function main(
       }),
       async run({ args, options }) {
         if (options.engine === "claude") {
-          errorOutput.write("Claude credentials are resolved by the Anthropic SDK (ANTHROPIC_API_KEY, OAuth, or its configured credential store).\n");
+          errorOutput.write(
+            "Claude credentials are resolved by the Anthropic SDK (ANTHROPIC_API_KEY, OAuth, or its configured credential store).\n",
+          );
           exitCode = 0;
           return;
         }
@@ -2150,7 +2156,12 @@ async function runScan(
     const repository = arguments_.repository ?? dependencies.currentDirectory();
     const target = targetFromArguments(arguments_);
     const config: CodexSecurityConfig = {
-      engine: arguments_.engine ?? dependencies.environment["CODEX_SECURITY_ENGINE"] as "codex" | "claude" | undefined,
+      engine:
+        arguments_.engine ??
+        (dependencies.environment["CODEX_SECURITY_ENGINE"] as
+          | "codex"
+          | "claude"
+          | undefined),
       pluginPath: arguments_.pluginPath,
       pythonPath: arguments_.pythonPath,
       codexOverrides:
@@ -2750,7 +2761,9 @@ function comparisonEngineOptions(environment: NodeJS.ProcessEnv): {
 } {
   const selected = environment["CODEX_SECURITY_ENGINE"];
   return {
-    ...(selected === "claude" || selected === "codex" ? { engine: selected } : {}),
+    ...(selected === "claude" || selected === "codex"
+      ? { engine: selected }
+      : {}),
     environment,
   };
 }
