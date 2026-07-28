@@ -9,7 +9,7 @@
 Requires Node.js 22 or later, Python 3.10 or later, and access to Codex Security.
 
 ```bash
-npm install @openai/codex-security
+npm install @codex-security/codex-security
 npx codex-security login
 npx codex-security scan .
 ```
@@ -19,7 +19,7 @@ For CI, set `OPENAI_API_KEY` instead of signing in.
 ## TypeScript SDK
 
 ```ts
-import { CodexSecurity } from "@openai/codex-security";
+import { CodexSecurity } from "@codex-security/codex-security";
 
 const security = new CodexSecurity();
 const result = await security.run(".");

@@ -1,16 +1,16 @@
 {
-  "name": "@openai/codex-security",
+  "name": "@codex-security/codex-security",
   "version": "0.1.0",
   "description": "TypeScript SDK and CLI for Codex Security",
   "license": "Apache-2.0",
-  "author": "OpenAI",
-  "homepage": "https://developers.openai.com/codex/security",
+  "author": "Codex Security contributors",
+  "homepage": "https://github.com/codex-security/codex-security",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openai/codex-security.git",
+    "url": "https://github.com/codex-security/codex-security.git",
     "directory": "sdk/typescript"
   },
-  "bugs": "https://github.com/openai/codex-security/issues",
+  "bugs": "https://github.com/codex-security/codex-security/issues",
   "type": "module",
   "engines": {
     "node": ">=22"

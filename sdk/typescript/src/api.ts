@@ -389,9 +389,11 @@ export class CodexSecurity {
       const authentication = await this.#engine.checkAuth(this.#dependencies.environment);
       if (this.#engine.engineType === "codex" && !runtime.credentialsAvailable) {
         throw new AuthenticationRequiredError(
-          "No credentials were found. Run 'codex-security login', use " +
-            "'codex-security login --device-auth' on a remote or headless machine, or set " +
-            "OPENAI_API_KEY or CODEX_API_KEY for CI.",
+          this.#engine.engineType === "claude"
+            ? "No Claude credentials were found. Set ANTHROPIC_API_KEY or configure credentials supported by the Anthropic SDK."
+            : "No credentials were found. Run 'codex-security login', use " +
+              "'codex-security login --device-auth' on a remote or headless machine, or set " +
+              "OPENAI_API_KEY or CODEX_API_KEY for CI.",
         );
       }
       notifyObserver(

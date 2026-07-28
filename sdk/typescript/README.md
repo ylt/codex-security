@@ -1,4 +1,4 @@
-# `@openai/codex-security`
+# `@codex-security/codex-security`
 
 Open-source TypeScript SDK and CLI for running Codex Security scans. The
 ESM-only package includes TypeScript declarations, the `codex-security`
@@ -15,7 +15,7 @@ engine; Claude credentials are resolved by the Anthropic SDK.
 ## Install
 
 ```bash
-npm install @openai/codex-security
+npm install @codex-security/codex-security
 npx codex-security --version
 ```
 
@@ -31,7 +31,7 @@ Sign in with `npx codex-security login` or set `OPENAI_API_KEY` or
 permission to assess:
 
 ```ts
-import { CodexSecurity } from "@openai/codex-security";
+import { CodexSecurity } from "@codex-security/codex-security";
 
 const security = new CodexSecurity();
 
