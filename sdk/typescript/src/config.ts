@@ -11,6 +11,9 @@ export interface JsonObject {
 }
 
 export interface CodexSecurityConfig {
+  engine?: "codex" | "claude";
+  model?: string;
+  reasoningEffort?: string;
   pluginPath?: string;
   codexOverrides?: JsonObject;
   pythonPath?: string;

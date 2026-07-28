@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "@inquirer/prompts": "8.3.0",
+    "@anthropic-ai/sdk": "0.57.0",
     "@octokit/core": "7.0.6",
     "@openai/codex": "0.144.6",
     "@openai/codex-sdk": "0.144.6",

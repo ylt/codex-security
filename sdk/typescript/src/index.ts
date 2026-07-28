@@ -1,4 +1,13 @@
 export { CodexSecurity } from "./api.js";
+export { createEngine, ClaudeEngine, CodexEngine } from "./engine/index.js";
+export type {
+  EngineAuth,
+  EngineConfig,
+  EngineEvent,
+  EngineThread,
+  EngineType,
+  ScanEngine,
+} from "./engine/index.js";
 export { estimateScanCost } from "./cost.js";
 export type { ScanCost } from "./cost.js";
 export type {

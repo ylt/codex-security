@@ -4,6 +4,10 @@ Open-source TypeScript SDK and CLI for running Codex Security scans. The
 ESM-only package includes TypeScript declarations, the `codex-security`
 executable, and the matching Codex runtime.
 
+Codex is the default scan engine. Use `--engine claude`,
+`CODEX_SECURITY_ENGINE=claude`, or `config.engine: "claude"` to use the Claude
+engine; Claude credentials are resolved by the Anthropic SDK.
+
 > [!NOTE]
 > This package follows semantic versioning. Its public API may change between
 > minor versions before `1.0.0`.

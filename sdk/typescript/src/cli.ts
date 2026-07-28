@@ -77,6 +77,7 @@ import type { ScanWorkerPhase, ScanWorkerStatus } from "./worker-progress.js";
 import { DiffTarget, type ScanMode, type ScanTarget } from "./targets.js";
 import {
   BUNDLED_PLUGIN_VERSION,
+  ANTHROPIC_SDK_VERSION,
   CODEX_EXECUTABLE_VERSION,
   CODEX_SDK_VERSION,
   VERSION,
@@ -120,6 +121,7 @@ const EXPORT_DEFAULT_OUTPUTS = {
   sarif: "results.sarif",
 } as const;
 const VALUE_OPTIONS = new Set([
+  "--engine",
   "--path",
   "--knowledge-base",
   "--diff",
@@ -150,6 +152,7 @@ function optionValue(flag: string) {
 }
 
 interface ScanArguments {
+  engine?: "codex" | "claude";
   repository?: string;
   paths: string[];
   knowledgeBasePaths: string[];
@@ -488,6 +491,7 @@ export async function main(
   errorOutput: Writable = process.stderr,
   dependencies: CliDependencies = DEFAULT_DEPENDENCIES,
 ): Promise<number> {
+  argv = argv.map((value) => (value === "-e" ? "--engine" : value));
   argv = defaultScansList(argv);
   const positionals: string[] = [];
   const argumentError = validateCliArguments(argv, positionals);
@@ -801,6 +805,10 @@ export async function main(
             .enum(["standard", "deep"])
             .default("standard")
             .describe("Scan mode."),
+          engine: z
+            .enum(["codex", "claude"])
+            .optional()
+            .describe("Model engine (default: CODEX_SECURITY_ENGINE or codex)."),
           model: optionValue("--model")
             .optional()
             .describe("Model to use for the scan."),
@@ -888,6 +896,7 @@ export async function main(
             head: options.head,
             base: options.base,
             mode: options.mode,
+            engine: options.engine,
             model: options.model,
             outputDir: options.outputDir,
             archiveExisting: options.archiveExisting,
@@ -1239,6 +1248,10 @@ export async function main(
         action: z.enum(["status"]).optional().describe("Show login status."),
       }),
       options: z.object({
+        engine: z
+          .enum(["codex", "claude"])
+          .optional()
+          .describe("Credential engine (default: CODEX_SECURITY_ENGINE or codex)."),
         deviceAuth: z
           .boolean()
           .default(false)
@@ -1253,6 +1266,11 @@ export async function main(
           .describe("Read an access token from stdin."),
       }),
       async run({ args, options }) {
+        if (options.engine === "claude") {
+          errorOutput.write("Claude credentials are resolved by the Anthropic SDK (ANTHROPIC_API_KEY, OAuth, or its configured credential store).\n");
+          exitCode = 0;
+          return;
+        }
         exitCode = await dependencies.runCodex([
           "login",
           ...(args.action === undefined ? [] : [args.action]),
@@ -1309,6 +1327,7 @@ export async function main(
         cliVersion: z.string(),
         codexVersion: z.string(),
         codexSdkVersion: z.string(),
+        anthropicSdkVersion: z.string(),
         model: z.string(),
         reasoningEffort: z.string(),
         nextStep: z.string(),
@@ -1323,6 +1342,7 @@ export async function main(
           cliVersion: VERSION,
           codexVersion: CODEX_EXECUTABLE_VERSION,
           codexSdkVersion: CODEX_SDK_VERSION,
+          anthropicSdkVersion: ANTHROPIC_SDK_VERSION,
           ...scanModelConfiguration(DEFAULT_CODEX_CONFIG),
           nextStep: "codex-security scan . --dry-run",
         };
@@ -2126,6 +2146,7 @@ async function runScan(
     const repository = arguments_.repository ?? dependencies.currentDirectory();
     const target = targetFromArguments(arguments_);
     const config: CodexSecurityConfig = {
+      engine: arguments_.engine ?? dependencies.environment["CODEX_SECURITY_ENGINE"] as "codex" | "claude" | undefined,
       pluginPath: arguments_.pluginPath,
       pythonPath: arguments_.pythonPath,
       codexOverrides:

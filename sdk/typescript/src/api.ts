@@ -45,7 +45,8 @@ import {
   workerStatusFromEvent,
   type ScanWorkerStatus,
 } from "./worker-progress.js";
-import { CODEX_EXECUTABLE_VERSION, CODEX_SDK_VERSION } from "./version.js";
+import { ANTHROPIC_SDK_VERSION, CODEX_EXECUTABLE_VERSION, CODEX_SDK_VERSION } from "./version.js";
+import { createEngine, type EngineType, type ScanEngine } from "./engine/index.js";
 import {
   bootstrapPlugin,
   cleanupSdkDirectory,
@@ -112,6 +113,7 @@ interface PreparedRuntime {
 }
 
 export interface ScanOptions {
+  engine?: EngineType;
   target?: ScanTarget;
   mode?: ScanMode;
   knowledgeBasePaths?: string[];
@@ -139,7 +141,7 @@ export interface ScanOptions {
 export type ScanAuthentication =
   | {
       method: "api_key";
-      source: "OPENAI_API_KEY" | "CODEX_API_KEY";
+      source: "OPENAI_API_KEY" | "CODEX_API_KEY" | "ANTHROPIC_API_KEY";
       verified: false;
     }
   | {
@@ -184,6 +186,8 @@ export interface CodexSecurityMetadata {
   sdkVersion: string;
   executable: "@openai/codex";
   executableVersion: string;
+  anthropicSdk: "@anthropic-ai/sdk";
+  anthropicSdkVersion: string;
 }
 
 interface ClientDependencies {
@@ -214,9 +218,12 @@ export class CodexSecurity {
     sdkVersion: CODEX_SDK_VERSION,
     executable: "@openai/codex",
     executableVersion: CODEX_EXECUTABLE_VERSION,
+    anthropicSdk: "@anthropic-ai/sdk",
+    anthropicSdkVersion: ANTHROPIC_SDK_VERSION,
   };
 
   readonly #dependencies: ClientDependencies;
+  readonly #engine: ScanEngine;
   readonly #loginHandles = new Set<CodexLoginHandle>();
   readonly #abortController = new AbortController();
   #activeOperation: Promise<unknown> | null = null;
@@ -232,6 +239,11 @@ export class CodexSecurity {
   ) {
     this.config = structuredClone(config);
     this.#dependencies = dependencies;
+    const selectedEngine = this.config.engine ?? dependencies.environment["CODEX_SECURITY_ENGINE"] ?? "codex";
+    if (selectedEngine !== "codex" && selectedEngine !== "claude") {
+      throw new CodexSecurityError(`Unknown scan engine: ${selectedEngine}. Use codex or claude.`);
+    }
+    this.#engine = createEngine(selectedEngine, { type: selectedEngine, model: this.config.model, reasoningEffort: this.config.reasoningEffort, pythonPath: this.config.pythonPath }, dependencies.environment);
   }
 
   public async run(
@@ -257,7 +269,7 @@ export class CodexSecurity {
       "temporary",
     );
     const configuration = await mergedCodexConfig(this.config);
-    const model = scanModelConfiguration(configuration);
+    const model = this.#modelConfiguration(configuration);
     validateScanCostLimit(options.maxCostUsd, model.model);
     const archiveDir =
       options.archiveExisting === true
@@ -273,7 +285,10 @@ export class CodexSecurity {
         : {}),
       outputDir: inputs.outputDir,
       ...(archiveDir === null ? {} : { archiveDir }),
-      authentication: scanAuthentication(this.#dependencies.environment),
+      authentication: authenticationToScanAuthentication(
+        await this.#engine.checkAuth(this.#dependencies.environment),
+        this.#dependencies.environment,
+      ),
       ...model,
       ...(options.maxCostUsd === undefined
         ? {}
@@ -356,7 +371,7 @@ export class CodexSecurity {
       }
       checkOpen();
       const apiKey = environmentApiKey(this.#dependencies.environment);
-      if (apiKey !== null) {
+      if (this.#engine.engineType === "codex" && apiKey !== null) {
         const codexCommand = this.#codexCommand();
         const login = await persistApiKey(
           codexCommand,
@@ -371,7 +386,8 @@ export class CodexSecurity {
         }
         runtime.credentialsAvailable = true;
       }
-      if (!runtime.credentialsAvailable) {
+      const authentication = await this.#engine.checkAuth(this.#dependencies.environment);
+      if (this.#engine.engineType === "codex" && !runtime.credentialsAvailable) {
         throw new AuthenticationRequiredError(
           "No credentials were found. Run 'codex-security login', use " +
             "'codex-security login --device-auth' on a remote or headless machine, or set " +
@@ -382,7 +398,7 @@ export class CodexSecurity {
         "onAuthentication",
         options.onAuthentication,
         options.onObserverError,
-        scanAuthentication(this.#dependencies.environment),
+        authenticationToScanAuthentication(authentication, this.#dependencies.environment),
       );
       const python = await (
         this.#dependencies.resolvePluginPython ?? resolvePluginPython
@@ -566,17 +582,10 @@ export class CodexSecurity {
         CODEX_HOME: runtime.codexHome,
         ...runtimePaths,
       };
-      const codex = this.#dependencies.createCodex({
+      const thread = await this.#engine.createScanSession({
         env: definedEnvironment(environment),
-        config: {
-          default_permissions: SCAN_PERMISSION_PROFILE,
-          allow_login_shell: false,
-        },
-      });
-      const thread = codex.startThread({
         workingDirectory: scanDir,
-        skipGitRepoCheck: true,
-        approvalPolicy: "never",
+        signal,
       });
       const serializedPaths =
         normalized.kind === "paths"
@@ -868,6 +877,16 @@ export class CodexSecurity {
 
   #codexCommand(): CodexCommand {
     return (this.#dependencies.resolveCodexCommand ?? resolveCodexCommand)();
+  }
+
+  #modelConfiguration(configuration: JsonObject): { model: string; reasoningEffort: string } {
+    if (this.#engine.engineType === "claude") {
+      return {
+        model: this.config.model ?? "claude-sonnet-4-20250514",
+        reasoningEffort: this.config.reasoningEffort ?? "medium",
+      };
+    }
+    return scanModelConfiguration(configuration);
   }
 
   async #validateLocalInputs(
@@ -1333,6 +1352,14 @@ export function scanAuthentication(
   return key === null
     ? { method: "stored_credentials", verified: false }
     : { method: "api_key", source: key.source, verified: false };
+}
+
+function authenticationToScanAuthentication(
+  authentication: { method: "api_key" | "stored_credentials"; verified: boolean; engine: "codex" | "claude" },
+  environment: ProcessEnvironment,
+): ScanAuthentication {
+  if (authentication.engine === "codex") return scanAuthentication(environment);
+  return { method: authentication.method, source: "ANTHROPIC_API_KEY", verified: authentication.verified } as ScanAuthentication;
 }
 
 function notifyObserver<Arguments extends unknown[]>(

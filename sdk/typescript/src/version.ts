@@ -8,12 +8,14 @@ const PACKAGE_VERSIONS = packageVersions(
 export const VERSION = PACKAGE_VERSIONS.package;
 export const CODEX_SDK_VERSION = PACKAGE_VERSIONS.sdk;
 export const CODEX_EXECUTABLE_VERSION = PACKAGE_VERSIONS.executable;
+export const ANTHROPIC_SDK_VERSION = PACKAGE_VERSIONS.anthropic;
 export const BUNDLED_PLUGIN_VERSION = "0.1.14" as const;
 
 function packageVersions(url: URL): {
   package: string;
   sdk: string;
   executable: string;
+  anthropic: string;
 } {
   try {
     const manifest: unknown = JSON.parse(readFileSync(url, "utf8"));
@@ -39,15 +41,21 @@ function packageVersions(url: URL): {
       "@openai/codex" in dependencies
         ? dependencies["@openai/codex"]
         : undefined;
+    const anthropic =
+      "@anthropic-ai/sdk" in dependencies
+        ? dependencies["@anthropic-ai/sdk"]
+        : undefined;
     if (
       typeof sdk !== "string" ||
       sdk.length === 0 ||
       typeof executable !== "string" ||
-      executable.length === 0
+      executable.length === 0 ||
+      typeof anthropic !== "string" ||
+      anthropic.length === 0
     ) {
       throw new Error("Codex dependencies must have non-empty versions");
     }
-    return { package: manifest.version, sdk, executable };
+    return { package: manifest.version, sdk, executable, anthropic };
   } catch (error) {
     throw new Error("Unable to read Codex Security package versions.", {
       cause: error,
