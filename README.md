@@ -1,31 +1,44 @@
-# Codex Security
+# codex-security
 
-`@openai/codex-security` is a CLI and TypeScript SDK for finding, validating, and fixing security vulnerabilities in your code. Scan repositories, review changes, track findings over time, and run security checks in CI.
+> **Fork of [`@openai/codex-security`](https://github.com/openai/codex-security)** —
+> a dual-engine security scanning CLI and SDK supporting both Codex and Claude
+> as scan backends.
 
-**[Documentation](http://learn.chatgpt.com/docs/security/cli)**
+**What's different from the upstream:**
+- **Dual-engine** — select engine with `--engine codex` (default) or `--engine claude`
+- **Claude engine** — `@anthropic-ai/sdk` integration with `ANTHROPIC_API_KEY` auth
+- **Scan comparison** — finding matching via Claude when using `--engine claude`
+- Renamed to `codex-security` (Claude + Codex portmanteau)
+- Private fork — not published to npm
 
 ## Quick start
 
-Requires Node.js 22 or later, Python 3.10 or later, and access to Codex Security.
+Requires Node.js 22+, Python 3.10+, and credentials for your chosen engine.
 
 ```bash
-npm install @codex-security/codex-security
+# Codex (default)
 npx codex-security login
-npx codex-security scan .
-```
+npx codex-security scan /path/to/repo
 
-For CI, set `OPENAI_API_KEY` instead of signing in.
+# Claude
+ANTHROPIC_API_KEY=sk-... npx codex-security --engine claude scan .
+```
 
 ## TypeScript SDK
 
 ```ts
-import { CodexSecurity } from "@codex-security/codex-security";
+import { CodexSecurity } from "@openai/codex-security";
 
 const security = new CodexSecurity();
-const result = await security.run(".");
+const result = await security.run(".", {
+  outputDir: "/path/outside/repo/results",
+});
 
 console.log(result.reportPath);
 await security.close();
 ```
 
-For installation, authentication, scan options, and CI setup, see the [official documentation](http://learn.chatgpt.com/docs/security/cli).
+## CLI reference
+
+See [sdk/typescript/README.md](sdk/typescript/README.md) for full CLI documentation,
+or run `npx codex-security --help`.
