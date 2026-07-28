@@ -1,10 +1,11 @@
-export type EngineType = "codex" | "claude";
+export type EngineType = "codex" | "claude" | "acp";
 
 export interface EngineConfig {
   type: EngineType;
   model?: string;
   reasoningEffort?: string;
   pythonPath?: string;
+  engineCommand?: string;
   createCodex?: (options: import("@openai/codex-sdk").CodexOptions) => unknown;
 }
 
@@ -41,6 +42,7 @@ export interface ScanEngine {
   createScanSession(options: {
     env: Record<string, string>;
     workingDirectory: string;
+    repositoryDirectory?: string;
     signal?: AbortSignal;
   }): Promise<EngineThread>;
   checkAuth(env: Record<string, string | undefined>): Promise<EngineAuth>;

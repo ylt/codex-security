@@ -243,9 +243,13 @@ export class CodexSecurity {
       this.config.engine ??
       dependencies.environment["CODEX_SECURITY_ENGINE"] ??
       "codex";
-    if (selectedEngine !== "codex" && selectedEngine !== "claude") {
+    if (
+      selectedEngine !== "codex" &&
+      selectedEngine !== "claude" &&
+      selectedEngine !== "acp"
+    ) {
       throw new CodexSecurityError(
-        `Unknown scan engine: ${selectedEngine}. Use codex or claude.`,
+        `Unknown scan engine: ${selectedEngine}. Use codex, claude, or acp.`,
       );
     }
     this.#engine = createEngine(
@@ -255,6 +259,7 @@ export class CodexSecurity {
         model: this.config.model,
         reasoningEffort: this.config.reasoningEffort,
         pythonPath: this.config.pythonPath,
+        engineCommand: this.config.engineCommand,
         createCodex: dependencies.createCodex,
       },
       dependencies.environment,
@@ -608,6 +613,7 @@ export class CodexSecurity {
       const thread = await this.#engine.createScanSession({
         env: definedEnvironment(environment),
         workingDirectory: scanDir,
+        repositoryDirectory: repo,
         signal,
       });
       const serializedPaths =
@@ -1384,16 +1390,21 @@ function authenticationToScanAuthentication(
   authentication: {
     method: "api_key" | "stored_credentials";
     verified: boolean;
-    engine: "codex" | "claude";
+    engine: "codex" | "claude" | "acp";
   },
   environment: ProcessEnvironment,
 ): ScanAuthentication {
   if (authentication.engine === "codex") return scanAuthentication(environment);
-  return {
-    method: authentication.method,
-    source: "ANTHROPIC_API_KEY",
-    verified: authentication.verified,
-  } as ScanAuthentication;
+  return authentication.method === "api_key"
+    ? {
+        method: "api_key",
+        source:
+          authentication.engine === "acp"
+            ? "ANTHROPIC_API_KEY"
+            : "ANTHROPIC_API_KEY",
+        verified: false,
+      }
+    : { method: "stored_credentials", verified: false };
 }
 
 function notifyObserver<Arguments extends unknown[]>(

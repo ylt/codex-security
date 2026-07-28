@@ -122,6 +122,7 @@ const EXPORT_DEFAULT_OUTPUTS = {
 } as const;
 const VALUE_OPTIONS = new Set([
   "--engine",
+  "--engine-command",
   "--path",
   "--knowledge-base",
   "--diff",
@@ -152,7 +153,8 @@ function optionValue(flag: string) {
 }
 
 interface ScanArguments {
-  engine?: "codex" | "claude";
+  engine?: "codex" | "claude" | "acp";
+  engineCommand?: string;
   repository?: string;
   paths: string[];
   knowledgeBasePaths: string[];
@@ -491,7 +493,9 @@ export async function main(
   errorOutput: Writable = process.stderr,
   dependencies: CliDependencies = DEFAULT_DEPENDENCIES,
 ): Promise<number> {
-  argv = argv.map((value) => (value === "-e" ? "--engine" : value));
+  argv = argv.map((value) =>
+    value === "-e" ? "--engine" : value === "-c" ? "--engine-command" : value,
+  );
   argv = defaultScansList(argv);
   const positionals: string[] = [];
   const argumentError = validateCliArguments(argv, positionals);
@@ -807,10 +811,15 @@ export async function main(
             .default("standard")
             .describe("Scan mode."),
           engine: z
-            .enum(["codex", "claude"])
+            .enum(["codex", "claude", "acp"])
             .optional()
             .describe(
               "Model engine (default: CODEX_SECURITY_ENGINE or codex).",
+            ),
+          engineCommand: optionValue("--engine-command")
+            .optional()
+            .describe(
+              "ACP agent command (default: CODEX_SECURITY_ENGINE_COMMAND).",
             ),
           model: optionValue("--model")
             .optional()
@@ -900,6 +909,7 @@ export async function main(
             base: options.base,
             mode: options.mode,
             engine: options.engine,
+            engineCommand: options.engineCommand,
             model: options.model,
             outputDir: options.outputDir,
             archiveExisting: options.archiveExisting,
@@ -2161,7 +2171,11 @@ async function runScan(
         (dependencies.environment["CODEX_SECURITY_ENGINE"] as
           | "codex"
           | "claude"
+          | "acp"
           | undefined),
+      engineCommand:
+        arguments_.engineCommand ??
+        dependencies.environment["CODEX_SECURITY_ENGINE_COMMAND"],
       pluginPath: arguments_.pluginPath,
       pythonPath: arguments_.pythonPath,
       codexOverrides:

@@ -11,7 +11,8 @@ export interface JsonObject {
 }
 
 export interface CodexSecurityConfig {
-  engine?: "codex" | "claude";
+  engine?: "codex" | "claude" | "acp";
+  engineCommand?: string;
   model?: string;
   reasoningEffort?: string;
   pluginPath?: string;
