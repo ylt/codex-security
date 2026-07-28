@@ -1,12 +1,19 @@
-# `@codex-security/codex-security`
+# `codex-security`
 
-Open-source TypeScript SDK and CLI for running Codex Security scans. The
-ESM-only package includes TypeScript declarations, the `codex-security`
-executable, and the matching Codex runtime.
+> **Fork of [`@openai/codex-security`](https://github.com/openai/codex-security)** —
+> a dual-engine security scanning CLI and SDK supporting both Codex and Claude
+> as scan backends.
 
-Codex is the default scan engine. Use `--engine claude`,
-`CODEX_SECURITY_ENGINE=claude`, or `config.engine: "claude"` to use the Claude
-engine; Claude credentials are resolved by the Anthropic SDK.
+**What's different from the upstream:**
+- **Dual-engine architecture** — select the scan engine with `--engine codex` (default) or `--engine claude`
+- **Claude engine** — added `@anthropic-ai/sdk` integration with `ANTHROPIC_API_KEY` auth
+- **Scan comparison** — finding matching across scans via Claude when using `--engine claude`
+- Renamed to `codex-security` (Claude + Codex portmanteau) to avoid trademark conflict
+- Private fork — not published to npm
+
+Codex remains the default scan engine for backward compatibility. Use
+`--engine claude`, `CODEX_SECURITY_ENGINE=claude`, or `config.engine: "claude"`
+to use the Claude engine; Claude credentials are resolved by the Anthropic SDK.
 
 > [!NOTE]
 > This package follows semantic versioning. Its public API may change between
@@ -15,7 +22,6 @@ engine; Claude credentials are resolved by the Anthropic SDK.
 ## Install
 
 ```bash
-npm install @codex-security/codex-security
 npx codex-security --version
 ```
 
@@ -31,7 +37,7 @@ Sign in with `npx codex-security login` or set `OPENAI_API_KEY` or
 permission to assess:
 
 ```ts
-import { CodexSecurity } from "@codex-security/codex-security";
+import { CodexSecurity } from "@openai/codex-security";
 
 const security = new CodexSecurity();
 
