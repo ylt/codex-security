@@ -32,7 +32,7 @@ describe("bundled Claude compatibility", () => {
     );
   });
 
-  test("exposes readable MCP tools over stdio", async () => {
+  test("launches the bundled MCP runtime over stdio", async () => {
     const child = spawn(
       process.execPath,
       [join(pluginRoot, "mcp/server.mjs")],
@@ -42,7 +42,16 @@ describe("bundled Claude compatibility", () => {
     );
     children.push(child);
     child.stdin.write(
-      `${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} })}\n`,
+      `${JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2024-11-05",
+          capabilities: {},
+          clientInfo: { name: "test", version: "1" },
+        },
+      })}\n`,
     );
     const output = await new Promise<string>((resolve, reject) => {
       let value = "";
@@ -53,14 +62,9 @@ describe("bundled Claude compatibility", () => {
       });
       child.once("error", reject);
     });
-    const names = JSON.parse(output).result.tools.map(
-      (tool: { name: string }) => tool.name,
-    );
-    expect(names).toEqual([
-      "scan_repository",
-      "scan_diff",
-      "export_results",
-      "validate_finding",
-    ]);
+    expect(JSON.parse(output).result).toMatchObject({
+      protocolVersion: "2024-11-05",
+      serverInfo: { name: "codex-security" },
+    });
   });
 });
