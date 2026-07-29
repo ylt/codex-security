@@ -1,27 +1,38 @@
 # codex-security
 
 > **Fork of [`@openai/codex-security`](https://github.com/openai/codex-security)** —
-> a dual-engine security scanning CLI and SDK supporting both Codex and Claude
-> as scan backends.
+> a multi-engine security scanning CLI and SDK supporting Codex, Claude, and
+> ACP-compatible agents as scan backends.
 
 **What's different from the upstream:**
-- **Dual-engine** — select engine with `--engine codex` (default) or `--engine claude`
-- **Claude engine** — `@anthropic-ai/sdk` integration with `ANTHROPIC_API_KEY` auth
+- **Multiple engines** — select `codex` (default), `claude`, or `acp`
+- **Claude engine** — uses the Anthropic SDK's built-in credential resolution;
+  `ANTHROPIC_API_KEY` is optional
+- **ACP engine** — connect to an external Agent Client Protocol agent over stdio
 - **Scan comparison** — finding matching via Claude when using `--engine claude`
 - Renamed to `codex-security` (Claude + Codex portmanteau)
 - Private fork — not published to npm
 
 ## Quick start
 
-Requires Node.js 22+, Python 3.10+, and credentials for your chosen engine.
+Requires Node.js 22+ and Python 3.10+. Authentication is provided by the
+selected engine or its host; an API key is not universally required.
 
 ```bash
 # Codex (default)
 npx codex-security login
 npx codex-security scan /path/to/repo
 
-# Claude
-ANTHROPIC_API_KEY=sk-... npx codex-security --engine claude scan .
+# Claude (Anthropic SDK-managed auth; ANTHROPIC_API_KEY is optional)
+npx codex-security scan /path/to/repo --engine claude
+
+# ACP agent (the agent owns its authentication)
+npx codex-security scan /path/to/repo --engine acp --engine-command "your-acp-agent"
+
+# The engine and ACP command can also be configured through the environment.
+CODEX_SECURITY_ENGINE=acp \
+CODEX_SECURITY_ENGINE_COMMAND="your-acp-agent" \
+npx codex-security scan /path/to/repo
 ```
 
 ## TypeScript SDK

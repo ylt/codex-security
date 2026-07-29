@@ -1,19 +1,22 @@
 # `codex-security`
 
 > **Fork of [`@openai/codex-security`](https://github.com/openai/codex-security)** —
-> a dual-engine security scanning CLI and SDK supporting both Codex and Claude
-> as scan backends.
+> a multi-engine security scanning CLI and SDK supporting Codex, Claude, and
+> ACP-compatible agents as scan backends.
 
 **What's different from the upstream:**
-- **Dual-engine architecture** — select the scan engine with `--engine codex` (default) or `--engine claude`
-- **Claude engine** — added `@anthropic-ai/sdk` integration with `ANTHROPIC_API_KEY` auth
+- **Multiple engines** — select `codex` (default), `claude`, or `acp`
+- **Claude engine** — uses the Anthropic SDK's built-in credential resolution;
+  `ANTHROPIC_API_KEY` is optional
+- **ACP engine** — connect to an external Agent Client Protocol agent over stdio
 - **Scan comparison** — finding matching across scans via Claude when using `--engine claude`
 - Renamed to `codex-security` (Claude + Codex portmanteau) to avoid trademark conflict
 - Private fork — not published to npm
 
 Codex remains the default scan engine for backward compatibility. Use
 `--engine claude`, `CODEX_SECURITY_ENGINE=claude`, or `config.engine: "claude"`
-to use the Claude engine; Claude credentials are resolved by the Anthropic SDK.
+to use the Claude engine. Use `--engine acp` or `config.engine: "acp"` to use
+an ACP agent; ACP also requires an agent command.
 
 > [!NOTE]
 > This package follows semantic versioning. Its public API may change between
@@ -32,9 +35,10 @@ with `--python`, `pythonPath`, or `PYTHON` when needed.
 
 ## Run a scan from TypeScript
 
-Sign in with `npx codex-security login` or set `OPENAI_API_KEY` or
-`CODEX_API_KEY`. Then create a client and scan a repository you own or have
-permission to assess:
+Authenticate the selected engine, then create a client and scan a repository
+you own or have permission to assess. Codex uses its ChatGPT sign-in or
+`OPENAI_API_KEY`/`CODEX_API_KEY`; Claude credentials are resolved by the
+Anthropic SDK, and ACP authentication is handled by the configured agent:
 
 ```ts
 import { CodexSecurity } from "@openai/codex-security";
@@ -101,6 +105,43 @@ An environment API key takes precedence over a stored sign-in. Unset both
 environment key is configured, `codex-security login status` identifies the
 effective credential source without printing its value, including when no
 stored sign-in exists.
+
+### Claude
+
+The Claude engine delegates authentication to `@anthropic-ai/sdk`. An
+`ANTHROPIC_API_KEY` is optional: when the SDK or Claude host already has OAuth
+or another supported credential, run the scan without setting an API key:
+
+```bash
+npx codex-security scan . --engine claude
+```
+
+Set `ANTHROPIC_API_KEY` explicitly for CI or another environment where an API
+key is the intended credential. `codex-security login` and `logout` do not
+manage Claude credentials.
+
+### ACP
+
+The ACP engine launches an external Agent Client Protocol agent over stdio.
+The agent owns its authentication, so no Codex or Anthropic API key is needed
+by `codex-security`. Supply the agent command with `--engine-command` or
+`CODEX_SECURITY_ENGINE_COMMAND`:
+
+```bash
+npx codex-security scan . --engine acp --engine-command "your-acp-agent"
+CODEX_SECURITY_ENGINE_COMMAND="your-acp-agent" \
+  npx codex-security scan . --engine acp
+```
+
+The command is parsed into arguments without invoking a shell. Configure
+credentials using the ACP agent's own documented setup.
+
+### Select an engine
+
+The engine can be selected with the CLI option, `CODEX_SECURITY_ENGINE`, or
+the SDK's `engine` configuration. The CLI option takes precedence over the
+environment and configuration. `CODEX_SECURITY_ENGINE_COMMAND` similarly
+configures the ACP command when `--engine-command` is not supplied.
 
 ## CLI
 
